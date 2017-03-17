@@ -626,6 +626,8 @@ class PlayerEventHandler implements Listener
 		Player player = event.getPlayer();
 		UUID playerID = player.getUniqueId();
 		
+		if(player.hasMetadata("NPC")) return;
+		
 		//note login time
 		Date nowDate = new Date();
         long now = nowDate.getTime();
@@ -801,6 +803,8 @@ class PlayerEventHandler implements Listener
     void onPlayerRespawn (PlayerRespawnEvent event)
     {
         Player player = event.getPlayer();
+        if(player.hasMetadata("NPC")) return;
+        
         PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
         playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
         playerData.lastPvpTimestamp = 0;  //no longer in pvp combat
@@ -822,6 +826,8 @@ class PlayerEventHandler implements Listener
 	{
 		//FEATURE: prevent death message spam by implementing a "cooldown period" for death messages
 		Player player = event.getEntity();
+		if(player.hasMetadata("NPC")) return;
+		
         Long lastDeathTime = this.deathTimestamps.get(player.getUniqueId());
 		long now = Calendar.getInstance().getTimeInMillis(); 
 		if(lastDeathTime != null && now - lastDeathTime < instance.config_spam_deathMessageCooldownSeconds * 1000)
@@ -843,6 +849,8 @@ class PlayerEventHandler implements Listener
 	void onPlayerKicked(PlayerKickEvent event)
     {
 	    Player player = event.getPlayer();
+	    if(player.hasMetadata("NPC")) return;
+	    
 	    PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 	    playerData.wasKicked = true;
     }
@@ -854,6 +862,8 @@ class PlayerEventHandler implements Listener
 	{
 	    Player player = event.getPlayer();
 		UUID playerID = player.getUniqueId();
+		if(player.hasMetadata("NPC")) return;
+		
 	    PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		boolean isBanned;
 		if(playerData.wasKicked)
@@ -957,6 +967,7 @@ class PlayerEventHandler implements Listener
 	public void onPlayerDropItem(PlayerDropItemEvent event)
 	{
 		Player player = event.getPlayer();
+		if(player.hasMetadata("NPC")) return;
 		
 		//in creative worlds, dropping items is blocked
 		if(instance.creativeRulesApply(player.getLocation()))
@@ -993,6 +1004,8 @@ class PlayerEventHandler implements Listener
 	    if(event.getTo() == null || event.getTo().getWorld() == null) return;
 	    
 	    Player player = event.getPlayer();
+	    if(player.hasMetadata("NPC")) return;
+	    
         if(event.getCause() == TeleportCause.NETHER_PORTAL)
         {
             //FEATURE: when players get trapped in a nether portal, send them back through to the other side
@@ -1044,6 +1057,8 @@ class PlayerEventHandler implements Listener
 	public void onPlayerTeleport(PlayerTeleportEvent event)
 	{
 	    Player player = event.getPlayer();
+	    if(player.hasMetadata("NPC")) return;
+	    
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		
 		//FEATURE: prevent players from using ender pearls to gain access to secured claims
@@ -1109,6 +1124,8 @@ class PlayerEventHandler implements Listener
 	{
 		Player player = event.getPlayer();
 		Entity entity = event.getRightClicked();
+		
+		if(player.hasMetadata("NPC")) return;
 		
 		if(!instance.claimsEnabledForWorld(entity.getWorld())) return;
 		
@@ -1285,6 +1302,8 @@ class PlayerEventHandler implements Listener
 	    if(entity.getType() == EntityType.ARMOR_STAND || entity instanceof Animals)
 	    {
 	        Player player = event.getPlayer();
+	        if(player.hasMetadata("NPC")) return;
+	        
 	        PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
 	        Claim claim = instance.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
 	        if(claim != null)
@@ -1306,7 +1325,8 @@ class PlayerEventHandler implements Listener
 	public void onPlayerPickupItem(PlayerPickupItemEvent event)
 	{
 		Player player = event.getPlayer();
-
+		if(player.hasMetadata("NPC")) return;
+		
 		//FEATURE: lock dropped items to player who dropped them
 		
 		//who owns this stack?
@@ -1372,6 +1392,7 @@ class PlayerEventHandler implements Listener
 	public void onItemHeldChange(PlayerItemHeldEvent event)
 	{
 		Player player = event.getPlayer();
+		if(player.hasMetadata("NPC")) return;
 		
 		//if he's switching to the golden shovel
 		int newSlot = event.getNewSlot();
@@ -1396,6 +1417,8 @@ class PlayerEventHandler implements Listener
 		if(!instance.claimsEnabledForWorld(bucketEvent.getBlockClicked().getWorld())) return;
 	    
 	    Player player = bucketEvent.getPlayer();
+	    if(player.hasMetadata("NPC")) return;
+	    
 		Block block = bucketEvent.getBlockClicked().getRelative(bucketEvent.getBlockFace());
 		int minLavaDistance = 10;
 		
@@ -1484,6 +1507,8 @@ class PlayerEventHandler implements Listener
 	public void onPlayerBucketFill (PlayerBucketFillEvent bucketEvent)
 	{
 		Player player = bucketEvent.getPlayer();
+		if(player.hasMetadata("NPC")) return;
+		
 		Block block = bucketEvent.getBlockClicked();
 		
 		if(!instance.claimsEnabledForWorld(block.getWorld())) return;
@@ -1513,6 +1538,8 @@ class PlayerEventHandler implements Listener
 	    if(action == Action.PHYSICAL) return;
 	    
 	    Player player = event.getPlayer();
+	    if(player.hasMetadata("NPC")) return;
+	    
 		Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 		
 		Material clickedBlockType = null;

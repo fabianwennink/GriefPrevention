@@ -200,6 +200,12 @@ public class PlayerData
     public void setAccruedClaimBlocks(Integer accruedClaimBlocks)
     {
         this.accruedClaimBlocks = accruedClaimBlocks;
+        int accruedLimit = this.getAccruedClaimBlocksLimit();
+
+        if(accruedClaimBlocks > accruedLimit) {
+        	this.accruedClaimBlocks = accruedLimit;
+        }
+        
         this.newlyAccruedClaimBlocks = 0;
     }
 

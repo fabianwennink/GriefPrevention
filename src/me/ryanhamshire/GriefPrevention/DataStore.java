@@ -1749,6 +1749,7 @@ public abstract class DataStore
 	    {
 	        //ensure player data is already read from file before trying to save
 	        playerData.getAccruedClaimBlocks();
+	        playerData.getAccruedClaimBlocksLimit();
 	        playerData.getClaims();
 	        asyncSavePlayerData(this.playerID, this.playerData);
 	    }

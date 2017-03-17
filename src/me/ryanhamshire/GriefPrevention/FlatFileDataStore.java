@@ -641,6 +641,13 @@ public class FlatFileDataStore extends DataStore
     				//convert that to a number and store it										
     				playerData.setBonusClaimBlocks(Integer.parseInt(bonusBlocksString));
     				
+    				//fourth line is any bonus claim blocks granted by administrators
+    				String accruedBlocksLimitString = iterator.next();
+    				
+    				//convert that to a number and store it										
+    				playerData.setAccruedClaimBlocksLimit(Integer.parseInt(accruedBlocksLimitString));
+    				
+    				
     				//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
     				//String claimsString = inStream.readLine();
     				//iterator.next();
@@ -698,7 +705,11 @@ public class FlatFileDataStore extends DataStore
 			fileContent.append(String.valueOf(playerData.getBonusClaimBlocks()));
 			fileContent.append("\n");
 			
-			//fourth line is blank
+			//third line is bonus claim blocks
+			fileContent.append(String.valueOf(playerData.getAccruedClaimBlocksLimit()));
+			fileContent.append("\n");
+			
+			//fifth line is blank
 			fileContent.append("\n");
 			
 			//write data to file

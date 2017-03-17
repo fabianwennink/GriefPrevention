@@ -67,3 +67,4 @@ target/
 *.name
 .idea
 *.iml
+/bin/
