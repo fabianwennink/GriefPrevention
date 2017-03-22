@@ -20,9 +20,6 @@ package me.ryanhamshire.GriefPrevention;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -30,6 +27,7 @@ import java.util.regex.Matcher;
 import org.bukkit.*;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import com.google.common.io.Files;
 
@@ -593,7 +591,8 @@ public class FlatFileDataStore extends DataStore
 	synchronized PlayerData getPlayerDataFromStorage(UUID playerID)
 	{
 		File playerFile = new File(playerDataFolderPath + File.separator + playerID.toString());
-					
+		Player player = Bukkit.getPlayer(playerID);
+				
 		PlayerData playerData = new PlayerData();
 		playerData.playerID = playerID;
 		
@@ -613,27 +612,10 @@ public class FlatFileDataStore extends DataStore
     			    List<String> lines = Files.readLines(playerFile, Charset.forName("UTF-8"));
     			    Iterator<String> iterator = lines.iterator();
     			    
-
     				iterator.next();
-                    //first line is last login timestamp //RoboMWM - not using this anymore
-//
-//    				//convert that to a date and store it
-//    				DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
-//    				try
-//    				{
-//    					playerData.setLastLogin(dateFormat.parse(lastLoginTimestampString));
-//    				}
-//    				catch(ParseException parseException)
-//    				{
-//    					GriefPrevention.AddLogEntry("Unable to load last login for \"" + playerFile.getName() + "\".");
-//    					playerData.setLastLogin(null);
-//    				}
-    				
+
     				//second line is accrued claim blocks
     				String accruedBlocksString = iterator.next();
-    				
-    				//convert that to a number and store it
-    				playerData.setAccruedClaimBlocks(Integer.parseInt(accruedBlocksString));
     				
     				//third line is any bonus claim blocks granted by administrators
     				String bonusBlocksString = iterator.next();
@@ -643,14 +625,25 @@ public class FlatFileDataStore extends DataStore
     				
     				//fourth line is any bonus claim blocks granted by administrators
     				String accruedBlocksLimitString = iterator.next();
+    			
+    				int amount = Integer.parseInt(accruedBlocksLimitString);
+    				
+    				if(amount <= 5000) {    					
+    					amount = (player.hasPermission("claimblocks.digger")) ? 5500 : amount;
+    					amount = (player.hasPermission("claimblocks.lumberjack")) ? 6250 : amount;
+    					amount = (player.hasPermission("claimblocks.fisherman")) ? 8000 : amount;
+    					amount = (player.hasPermission("claimblocks.builder")) ? 9250 : amount;
+    					amount = (player.hasPermission("claimblocks.farmer")) ? 10750 : amount;
+    					amount = (player.hasPermission("claimblocks.survivor")) ? 12500 : amount;
+    				}
     				
     				//convert that to a number and store it										
-    				playerData.setAccruedClaimBlocksLimit(Integer.parseInt(accruedBlocksLimitString));
+    				playerData.setAccruedClaimBlocksLimit(amount);
     				
-    				
-    				//fourth line is a double-semicolon-delimited list of claims, which is currently ignored
-    				//String claimsString = inStream.readLine();
-    				//iterator.next();
+    				//convert that to a number and store it
+    				// Wait until the limit has been set, else the claimblocks get reset
+    				playerData.setAccruedClaimBlocks(Integer.parseInt(accruedBlocksString));
+    		
     			}
     				
     			//if there's any problem with the file's content, retry up to 5 times with 5 milliseconds between
@@ -708,7 +701,7 @@ public class FlatFileDataStore extends DataStore
 			//third line is bonus claim blocks
 			fileContent.append(String.valueOf(playerData.getAccruedClaimBlocksLimit()));
 			fileContent.append("\n");
-			
+	
 			//fifth line is blank
 			fileContent.append("\n");
 			

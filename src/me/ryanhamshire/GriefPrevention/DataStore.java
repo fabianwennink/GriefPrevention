@@ -42,8 +42,6 @@ import com.google.common.io.Files;
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore 
 {
-	private GriefPrevention instance;
-
 	//in-memory cache for player data
 	protected ConcurrentHashMap<UUID, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<UUID, PlayerData>();
 	
@@ -863,6 +861,7 @@ public abstract class DataStore
     public void savePlayerDataSync(UUID playerID, PlayerData playerData)
     {
         //ensure player data is already read from file before trying to save
+        playerData.getAccruedClaimBlocksLimit();
         playerData.getAccruedClaimBlocks();
         playerData.getClaims();
         
@@ -881,38 +880,38 @@ public abstract class DataStore
 	    this.overrideSavePlayerData(playerID, playerData);
 	    
 	    //save the ignore list
-	    if(playerData.ignoreListChanged)
-	    {
-    	    StringBuilder fileContent = new StringBuilder();
-            try
-            {
-                for(UUID uuidKey : playerData.ignoredPlayers.keySet())
-                {
-                    Boolean value = playerData.ignoredPlayers.get(uuidKey);
-                    if(value == null) continue;
-                    
-                    //admin-enforced ignores begin with an asterisk
-                    if(value)
-                    {
-                        fileContent.append("*");
-                    }
-                    
-                    fileContent.append(uuidKey);
-                    fileContent.append("\n");
-                }
-                
-                //write data to file
-                File playerDataFile = new File(playerDataFolderPath + File.separator + playerID + ".ignore");
-                Files.write(fileContent.toString().trim().getBytes("UTF-8"), playerDataFile);
-            }  
-            
-            //if any problem, log it
-            catch(Exception e)
-            {
-                GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
-                e.printStackTrace();
-            }
-	    }
+//	    if(playerData.ignoreListChanged)
+//	    {
+//    	    StringBuilder fileContent = new StringBuilder();
+//            try
+//            {
+//                for(UUID uuidKey : playerData.ignoredPlayers.keySet())
+//                {
+//                    Boolean value = playerData.ignoredPlayers.get(uuidKey);
+//                    if(value == null) continue;
+//                    
+//                    //admin-enforced ignores begin with an asterisk
+//                    if(value)
+//                    {
+//                        fileContent.append("*");
+//                    }
+//                    
+//                    fileContent.append(uuidKey);
+//                    fileContent.append("\n");
+//                }
+//                
+//                //write data to file
+//                File playerDataFile = new File(playerDataFolderPath + File.separator + playerID + ".ignore");
+//                Files.write(fileContent.toString().trim().getBytes("UTF-8"), playerDataFile);
+//            }  
+//            
+//            //if any problem, log it
+//            catch(Exception e)
+//            {
+//                GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+//                e.printStackTrace();
+//            }
+//	    }
 	}
 	
 	abstract void overrideSavePlayerData(UUID playerID, PlayerData playerData);
@@ -1032,7 +1031,6 @@ public abstract class DataStore
 		//if the claim should be opened to looting
 		if(grantAccess)
 		{
-			@SuppressWarnings("deprecation")
             Player winner = GriefPrevention.instance.getServer().getPlayer(winnerName);
 			if(winner != null)
 			{
@@ -1048,10 +1046,9 @@ public abstract class DataStore
 		//if the siege ended due to death, transfer inventory to winner
 		if(drops != null)
 		{
-			@SuppressWarnings("deprecation")
             Player winner = GriefPrevention.instance.getServer().getPlayer(winnerName);
-			@SuppressWarnings("deprecation")
             Player loser = GriefPrevention.instance.getServer().getPlayer(loserName);
+            
 			if(winner != null && loser != null)
 			{
 				//try to add any drops to the winner's inventory
@@ -1748,9 +1745,10 @@ public abstract class DataStore
 	    public void run()
 	    {
 	        //ensure player data is already read from file before trying to save
-	        playerData.getAccruedClaimBlocks();
 	        playerData.getAccruedClaimBlocksLimit();
+	        playerData.getAccruedClaimBlocks();
 	        playerData.getClaims();
+
 	        asyncSavePlayerData(this.playerID, this.playerData);
 	    }
 	}

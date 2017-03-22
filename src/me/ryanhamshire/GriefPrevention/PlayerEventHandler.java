@@ -917,18 +917,18 @@ class PlayerEventHandler implements Listener
         //drop data about this player
         this.dataStore.clearCachedPlayerData(playerID);
         
-        //send quit message later, but only if the player stays offline
-        if(instance.config_spam_logoutMessageDelaySeconds > 0)
-        {
-            String quitMessage = event.getQuitMessage();
-            if(quitMessage != null && !quitMessage.isEmpty())
-            {
-                BroadcastMessageTask task = new BroadcastMessageTask(quitMessage);
-                int taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, 20L * instance.config_spam_logoutMessageDelaySeconds);
-                this.heldLogoutMessages.put(playerID, taskID);
-                event.setQuitMessage("");
-            }
-        }
+//        //send quit message later, but only if the player stays offline
+//        if(instance.config_spam_logoutMessageDelaySeconds > 0)
+//        {
+//            String quitMessage = event.getQuitMessage();
+//            if(quitMessage != null && !quitMessage.isEmpty())
+//            {
+//                BroadcastMessageTask task = new BroadcastMessageTask(quitMessage);
+//                int taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, 20L * instance.config_spam_logoutMessageDelaySeconds);
+//                this.heldLogoutMessages.put(playerID, taskID);
+//                event.setQuitMessage("");
+//            }
+//        }
 	}
 	
 	//determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute

@@ -63,7 +63,6 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BlockIterator;
 
@@ -3097,7 +3096,6 @@ public class GriefPrevention extends JavaPlugin
         }
     }
 	
-	@SuppressWarnings("deprecation")
     public OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first

@@ -129,6 +129,7 @@ public class BlockEventHandler implements Listener
             return;
         }
 		
+		@SuppressWarnings("unused")
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 		//if not empty and wasn't the same as the last sign, log it and remember it for later
 		//This has been temporarily removed since `signMessage` includes location, not just the message. Waste of memory IMO

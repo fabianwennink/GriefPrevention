@@ -199,8 +199,8 @@ public class PlayerData
 
     public void setAccruedClaimBlocks(Integer accruedClaimBlocks)
     {
-        this.accruedClaimBlocks = accruedClaimBlocks;
-        int accruedLimit = this.getAccruedClaimBlocksLimit();
+        this.accruedClaimBlocks = accruedClaimBlocks; // 5000
+        int accruedLimit = this.getAccruedClaimBlocksLimit(); // 12500
 
         if(accruedClaimBlocks > accruedLimit) {
         	this.accruedClaimBlocks = accruedLimit;
@@ -253,6 +253,17 @@ public class PlayerData
             else
             {
                 this.bonusClaimBlocks = 0;
+            }
+        }
+        
+        if(this.AccruedClaimBlocksLimit < 0) {
+        	if(storageData.AccruedClaimBlocksLimit >= 0)
+            {
+                this.AccruedClaimBlocksLimit = storageData.AccruedClaimBlocksLimit;
+            }
+            else
+            {
+                this.AccruedClaimBlocksLimit = GriefPrevention.instance.config_claims_maxAccruedBlocks_default;
             }
         }
     }
