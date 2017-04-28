@@ -628,7 +628,7 @@ public class FlatFileDataStore extends DataStore
     			
     				int amount = Integer.parseInt(accruedBlocksLimitString);
     				
-    				if(amount <= 5000) {    					
+    				if(amount <= 5000 && (player != null)) {    					
     					amount = (player.hasPermission("claimblocks.digger")) ? 5500 : amount;
     					amount = (player.hasPermission("claimblocks.lumberjack")) ? 6250 : amount;
     					amount = (player.hasPermission("claimblocks.fisherman")) ? 8000 : amount;
