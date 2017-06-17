@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 import me.ryanhamshire.GriefPrevention.events.VisualizationEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.BanList;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -46,7 +47,6 @@ import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
@@ -73,8 +73,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BlockIterator;
 
 class PlayerEventHandler implements Listener 
@@ -689,7 +687,7 @@ class PlayerEventHandler implements Listener
 							if(info2.address.toString().equals(address))
 							{
 								OfflinePlayer bannedAccount = instance.getServer().getOfflinePlayer(info2.bannedAccountName);
-								bannedAccount.setBanned(false);
+								instance.getServer().getBanList(BanList.Type.NAME).pardon(bannedAccount.getName());
 								this.tempBannedIps.remove(j--);
 							}
 						}
