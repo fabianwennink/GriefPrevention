@@ -34,8 +34,8 @@ import java.util.regex.Pattern;
 
 
 import me.ryanhamshire.GriefPrevention.events.VisualizationEvent;
-import org.bukkit.Bukkit;
 import org.bukkit.BanList;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -47,6 +47,7 @@ import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
@@ -73,6 +74,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BlockIterator;
 
 class PlayerEventHandler implements Listener 
@@ -249,9 +252,25 @@ class PlayerEventHandler implements Listener
 		
 		//FEATURE: automatically educate players about the /trapped command
 		//check for "trapped" or "stuck" to educate players about the /trapped command
-		if(!message.contains("/trapped") && (message.contains("trapped") || message.contains("stuck") || message.contains(this.dataStore.getMessage(Messages.TrappedChatKeyword))))
-		{
-			instance.sendMessage(player, TextMode.Info, Messages.TrappedInstructions, 10L);
+		String trappedwords = this.dataStore.getMessage(
+		    Messages.TrappedChatKeyword
+		);
+		if (!trappedwords.isEmpty()) {
+		    String[] checkWords = trappedwords.split(";");
+
+		    for (String checkWord : checkWords) {
+			if (!message.contains("/trapped")
+			    && message.contains(checkWord))
+			{
+			    instance.sendMessage(
+				    player,
+				    TextMode.Info, 
+				    Messages.TrappedInstructions,
+				    10L
+			    );
+			    break;
+			}
+		    }
 		}
 		
 		//FEATURE: monitor for chat and command spam
@@ -765,18 +784,28 @@ class PlayerEventHandler implements Listener
         //create a thread to load ignore information
         new IgnoreLoaderThread(playerID, playerData.ignoredPlayers).start();
         
-        //is he possibly stuck in a portal frame?
-		//Because people can't read update notes, this try-catch will be here for a while
-		try
+        //is he stuck in a portal frame?
+		if (player.hasMetadata("GP_PORTALRESCUE"))
 		{
+			//If so, let him know and rescue him in 10 seconds. If he is in fact not trapped, hopefully chunks will have loaded by this time so he can walk out.
+			instance.sendMessage(player, TextMode.Info, Messages.NetherPortalTrapDetectionMessage, 20L);
+			new BukkitRunnable()
+			{
+				@Override
+				public void run()
+				{
+					if (player.getPortalCooldown() > 8)
+					{
+						instance.AddLogEntry("Rescued " + player.getName() + " from a nether portal.\nTeleported from " + player.getLocation().toString() + " to " + ((Location)player.getMetadata("GP_PORTALRESCUE").get(0).value()).toString(), CustomLogEntryTypes.Debug);
+						player.teleport((Location)player.getMetadata("GP_PORTALRESCUE").get(0).value());
+						player.removeMetadata("GP_PORTALRESCUE", instance);
+					}
+				}
+			}.runTaskLater(instance, 200L);
+		}
+		//Otherwise just reset cooldown, just in case they happened to logout again...
+		else
 			player.setPortalCooldown(0);
-		}
-		catch (NoSuchMethodError e)
-		{
-			instance.getLogger().severe("Nether portal trap rescues will not function and you will receive a nice stack trace every time a player uses a nether portal.");
-			instance.getLogger().severe("Please update your server mod (Craftbukkit/Spigot/Paper), as mentioned in the update notes.");
-			instance.getServer().dispatchCommand(instance.getServer().getConsoleSender(), "version");
-		}
 
         
         //if we're holding a logout message for this player, don't send that or this event's join message
@@ -864,6 +893,14 @@ class PlayerEventHandler implements Listener
 		
 	    PlayerData playerData = this.dataStore.getPlayerData(playerID);
 		boolean isBanned;
+
+		//If player is not trapped in a portal and has a pending rescue task, remove the associated metadata
+		//Why 9? No idea why, but this is decremented by 1 when the player disconnects.
+		if (player.getPortalCooldown() < 9)
+		{
+			player.removeMetadata("GP_PORTALRESCUE", instance);
+		}
+
 		if(playerData.wasKicked)
 		{
 		    isBanned = player.isBanned();
@@ -1007,7 +1044,7 @@ class PlayerEventHandler implements Listener
         if(event.getCause() == TeleportCause.NETHER_PORTAL)
         {
             //FEATURE: when players get trapped in a nether portal, send them back through to the other side
-			instance.startRescueTask(player);
+			instance.startRescueTask(player, player.getLocation());
 
 			//don't track in worlds where claims are not enabled
 			if(!instance.claimsEnabledForWorld(event.getTo().getWorld())) return;

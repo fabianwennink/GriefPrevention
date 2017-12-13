@@ -63,6 +63,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BlockIterator;
 
@@ -133,6 +134,7 @@ public class GriefPrevention extends JavaPlugin
 	
 	public ArrayList<World> config_siege_enabledWorlds;				//whether or not /siege is enabled on this server
 	public ArrayList<Material> config_siege_blocks;					//which blocks will be breakable in siege mode
+        public int config_siege_doorsOpenSeconds;  // how before claim is re-secured after siege win
 		
 	public boolean config_spam_enabled;								//whether or not to monitor for spam
 	public int config_spam_loginCooldownSeconds;					//how long players must wait between logins.  combats login spam.
@@ -745,6 +747,8 @@ public class GriefPrevention extends JavaPlugin
             }
         }
         
+        this.config_siege_doorsOpenSeconds = config.getInt("GriefPrevention.Siege.DoorsOpenDelayInSeconds", 5*60);
+        
         this.config_pvp_noCombatInPlayerLandClaims = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.PlayerOwnedClaims", this.config_siege_enabledWorlds.size() == 0);
         this.config_pvp_noCombatInAdminLandClaims = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeClaims", this.config_siege_enabledWorlds.size() == 0);
         this.config_pvp_noCombatInAdminSubdivisions = config.getBoolean("GriefPrevention.PvP.ProtectPlayersInLandClaims.AdministrativeSubdivisions", this.config_siege_enabledWorlds.size() == 0);
@@ -876,6 +880,7 @@ public class GriefPrevention extends JavaPlugin
         
         outConfig.set("GriefPrevention.Siege.Worlds", siegeEnabledWorldNames);
         outConfig.set("GriefPrevention.Siege.BreakableBlocks", breakableBlocksList);
+        outConfig.set("GriefPrevention.Siege.DoorsOpenDelayInSeconds", this.config_siege_doorsOpenSeconds);
         
         outConfig.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);
         outConfig.set("GriefPrevention.SilverfishBreakBlocks", this.config_silverfishBreakBlocks);      
@@ -1501,6 +1506,11 @@ public class GriefPrevention extends JavaPlugin
 		        ChatColor.GREEN + this.dataStore.getMessage(Messages.Containers) + " " + 
 		        ChatColor.BLUE + this.dataStore.getMessage(Messages.Access));
 			
+			if(claim.getSubclaimRestrictions())
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.HasSubclaimRestriction);
+			}
+
 			return true;
 		}
 		
@@ -1691,6 +1701,37 @@ public class GriefPrevention extends JavaPlugin
 			return true;
 		}
 		
+		//restrictsubclaim
+		else if (cmd.getName().equalsIgnoreCase("restrictsubclaim") && player != null)
+		{
+			PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+			Claim claim = this.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+			if(claim == null || claim.parent == null)
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.StandInSubclaim);
+				return true;
+			}
+
+			if(!player.getUniqueId().equals(claim.parent.ownerID))
+			{
+				GriefPrevention.sendMessage(player, TextMode.Err, Messages.OnlyOwnersModifyClaims, claim.getOwnerName());
+				return true;
+			}
+
+			if(claim.getSubclaimRestrictions())
+			{
+				claim.setSubclaimRestrictions(false);
+				GriefPrevention.sendMessage(player, TextMode.Success, Messages.SubclaimUnrestricted);
+			}
+			else
+			{
+				claim.setSubclaimRestrictions(true);
+				GriefPrevention.sendMessage(player, TextMode.Success, Messages.SubclaimRestricted);
+			}
+			this.dataStore.saveClaim(claim);
+			return true;
+		}
+
 		//buyclaimblocks
 		else if(cmd.getName().equalsIgnoreCase("buyclaimblocks") && player != null)
 		{
@@ -3098,6 +3139,7 @@ public class GriefPrevention extends JavaPlugin
         }
     }
 	
+	@SuppressWarnings("deprecation")
     public OfflinePlayer resolvePlayerByName(String name) 
 	{
 		//try online players first
@@ -3315,7 +3357,16 @@ public class GriefPrevention extends JavaPlugin
 	static void sendMessage(Player player, ChatColor color, String message, long delayInTicks)
 	{
 		SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message);
-		GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
+
+		//Only schedule if there should be a delay. Otherwise, send the message right now, else the message will appear out of order.
+		if(delayInTicks > 0)
+		{
+			GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
+		}
+		else
+		{
+			task.run();
+		}
 	}
 	
 	//checks whether players can create claims in a world
@@ -3591,9 +3642,10 @@ public class GriefPrevention extends JavaPlugin
         if(configSetting != null) return configSetting;
         return world.getPVP();
     }
-
-    public static boolean isNewToServer(Player player) {
-    	if(player.getStatistic(Statistic.PICKUP, Material.WOOD) > 0) return false;
+    
+    public static boolean isNewToServer(Player player)
+    {
+        if(player.getStatistic(Statistic.PICKUP, Material.WOOD) > 0) return false;
         
         PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
         if(playerData.getClaims().size() > 0) return false;
@@ -3693,10 +3745,10 @@ public class GriefPrevention extends JavaPlugin
 
 	//Track scheduled "rescues" so we can cancel them if the player happens to teleport elsewhere so we can cancel it.
 	ConcurrentHashMap<UUID, BukkitTask> portalReturnTaskMap = new ConcurrentHashMap<UUID, BukkitTask>();
-	public void startRescueTask(Player player)
+	public void startRescueTask(Player player, Location location)
 	{
-		//Schedule task to reset player's portal cooldown after 20 seconds
-		BukkitTask task = new CheckForPortalTrapTask(player, this).runTaskLater(GriefPrevention.instance, 400L);
+		//Schedule task to reset player's portal cooldown after 30 seconds (Maximum timeout time for client, in case their network is slow and taking forever to load chunks)
+		BukkitTask task = new CheckForPortalTrapTask(player, this, location).runTaskLater(GriefPrevention.instance, 600L);
 
 		//Cancel existing rescue task
 		if (portalReturnTaskMap.containsKey(player.getUniqueId()))
