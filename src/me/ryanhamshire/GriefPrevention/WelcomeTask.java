@@ -1,6 +1,7 @@
 package me.ryanhamshire.GriefPrevention;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFactory;
@@ -11,8 +12,7 @@ public class WelcomeTask implements Runnable
 {
     private Player player;
     
-    public WelcomeTask(Player player)
-    {
+    public WelcomeTask(Player player) {
         this.player = player;
     }
     
@@ -23,7 +23,6 @@ public class WelcomeTask implements Runnable
         if(!this.player.isOnline()) return;
         
         //offer advice and a helpful link
-        GriefPrevention.sendMessage(player, TextMode.Instr, Messages.AvoidGriefClaimLand);
         GriefPrevention.sendMessage(player, TextMode.Instr, Messages.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
         
         //give the player a reference book for later
@@ -37,29 +36,24 @@ public class WelcomeTask implements Runnable
             meta.setTitle(datastore.getMessage(Messages.BookTitle));
             
             StringBuilder page1 = new StringBuilder();
-            String URL = datastore.getMessage(Messages.BookLink, DataStore.SURVIVAL_VIDEO_URL);
-            String intro = datastore.getMessage(Messages.BookIntro);
+            String URL = colorize(datastore.getMessage(Messages.BookLink));
+            String intro = colorize(datastore.getMessage(Messages.BookIntro));
             
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
-            String editToolName = GriefPrevention.instance.config_claims_modificationTool.name().replace('_', ' ').toLowerCase();
-            String infoToolName = GriefPrevention.instance.config_claims_investigationTool.name().replace('_', ' ').toLowerCase();
-            String configClaimTools = datastore.getMessage(Messages.BookTools, editToolName, infoToolName);
-            page1.append(configClaimTools);
-            if(GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius < 0)
-            {
-                page1.append(datastore.getMessage(Messages.BookDisabledChestClaims));
-            }
+
+            StringBuilder page2 = new StringBuilder();
+
+            page2.append(colorize(datastore.getMessage(Messages.BookUsefulCommands))).append("\n\n");
+            page2.append("/Trust\n");
+            page2.append("/UnTrust\n");
+            page2.append("/TrustList\n");
+            page2.append("/ClaimsList\n\n");
             
-            StringBuilder page2 = new StringBuilder(datastore.getMessage(Messages.BookUsefulCommands)).append("\n\n");
-            page2.append("/Trust /UnTrust /TrustList\n");
-            page2.append("/ClaimsList\n");
-            page2.append("/AbandonClaim\n\n");
-            page2.append("/Claim /ExtendClaim\n");
-                        
-            page2.append("/IgnorePlayer\n\n");
+            page2.append("/AbandonClaim\n");
+            page2.append("/ExtendClaim\n");
+            page2.append("/SubdivideClaims\n\n");
             
-            page2.append("/SubdivideClaims\n");
             page2.append("/AccessTrust\n");
             page2.append("/ContainerTrust\n");
             page2.append("/PermissionTrust");
@@ -69,9 +63,10 @@ public class WelcomeTask implements Runnable
             ItemStack item = new ItemStack(Material.WRITTEN_BOOK);
             item.setItemMeta(meta);
             player.getInventory().addItem(item);
-        }
-        
+        } 
     }
     
-
+    private String colorize(String str) {
+    	return ChatColor.translateAlternateColorCodes('&', str);
+    }
 }
