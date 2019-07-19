@@ -145,10 +145,6 @@ commands:
       description: Lists permissions for the claim you're standing in.
       usage: /TrustList
       permission: griefprevention.claims
-    siege:
-      description: Initiates a siege versus another player.
-      usage: /Siege <playerName>
-      permission: griefprevention.siege
     ignoreclaims:
       description: Toggles ignore claims mode.
       usage: /IgnoreClaims
@@ -197,33 +193,6 @@ commands:
       description: Allows an administrator to get technical information about blocks in the world and items in hand.
       usage: /GPBlockInfo
       permission: griefprevention.gpblockinfo
-    ignoreplayer:
-      description: Ignores another player's chat messages.
-      usage: /IgnorePlayer <player name>
-      aliases: [ignore]
-      permission: griefprevention.ignore
-    unignoreplayer:
-      description: Unignores another player's chat messages.
-      usage: /UnIgnorePlayer <player name>
-      aliases: [unignore]
-      permission: griefprevention.ignore
-    ignoredplayerlist:
-      description: Lists the players you're ignoring in chat.
-      usage: /IgnoredPlayerList
-      aliases: [ignores, ignored, ignorelist, ignoredlist, listignores, listignored, ignoring]
-      permission: griefprevention.ignore
-    separate:
-      description: Forces two players to ignore each other in chat.
-      usage: /Separate <player1> <player2>
-      permission: griefprevention.separate
-    unseparate:
-      description: Reverses /separate.
-      usage: /UnSeparate <player1> <player2>
-      permission: griefprevention.separate
-    claimbook:
-      description: Gives a player a manual about claiming land.
-      usage: /ClaimBook <player>
-      permission: griefprevention.claimbook
 permissions:
     griefprevention.createclaims:
         description: Grants permission to create claims.
@@ -240,22 +209,17 @@ permissions:
             griefprevention.spam: true
             griefprevention.lava: true
             griefprevention.eavesdrop: true
-            griefprevention.deathblow: true
             griefprevention.softmute: true
             griefprevention.reload: true
             griefprevention.visualizenearbyclaims: true
             griefprevention.overrideclaimcountlimit: true
             griefprevention.transferclaim: true
             griefprevention.claimslistother: true
-            griefprevention.siegeimmune: true
-            griefprevention.separate: true
             griefprevention.eavesdropsigns: true
-            griefprevention.claimbook: true
             griefprevention.notignorable: true
             griefprevention.seeinactivity: true
             griefprevention.eavesdropimmune: true
             griefprevention.deleteclaimsinworld: true
-            griefprevention.siegeteleport: true
             griefprevention.unlockothersdrops: true
             griefprevention.seeclaimsize: true
     griefprevention.siegeimmune:
@@ -315,9 +279,6 @@ permissions:
     griefprevention.restorenatureaggressive:
         description: Grants access to /RestoreNatureAggressive and /RestoreNatureFill.
         default: op
-    griefprevention.deathblow:
-        description: Grants access to /DeathBlow.
-        default: op
     griefprevention.reload:
         description: Grants access to /gpreload.
         default: op
@@ -342,15 +303,6 @@ permissions:
     griefprevention.overrideclaimcountlimit:
         description: Allows players to create more claims than the limit specified by the config.
         default: op
-    griefprevention.separate:
-        description: Grants access to /Separate and /UnSeparate.
-        default: op
-    griefprevention.ignore:
-        description: Grants access to /Ignore, /Unignore, and /IgnoreList
-        default: true
-    griefprevention.claimbook:
-        description: Grants access to /ClaimBook.
-        default: op
     griefprevention.notignorable:
         description: Players with this permission can't be ignored.
         default: op
@@ -372,9 +324,6 @@ permissions:
     griefprevention.mostaccrued:
         description: Players with this permission can accrue more claim blocks (limit specified in the config file).
         default: false
-    griefprevention.siegeteleport:
-        description: Players with this permission can teleport into and out of besieged areas.
-        default: op
     claimblocks.digger:
         default: op
     claimblocks.lumberjack:

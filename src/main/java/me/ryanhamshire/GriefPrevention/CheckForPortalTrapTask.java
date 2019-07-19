@@ -15,13 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 package me.ryanhamshire.GriefPrevention;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -32,12 +29,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 class CheckForPortalTrapTask extends BukkitRunnable
 {
 	GriefPrevention instance;
-	//player who recently teleported via nether portal 
+	//player who recently teleported via nether portal
 	private Player player;
-	
+
 	//where to send the player back to if he hasn't left the portal frame
 	private Location returnLocation;
-	
+
 	public CheckForPortalTrapTask(Player player, GriefPrevention plugin, Location locationToReturn)
 	{
 		this.player = player;
@@ -45,7 +42,7 @@ class CheckForPortalTrapTask extends BukkitRunnable
 		this.returnLocation = locationToReturn;
 		player.setMetadata("GP_PORTALRESCUE", new FixedMetadataValue(instance, locationToReturn));
 	}
-	
+
 	@Override
 	public void run()
 	{

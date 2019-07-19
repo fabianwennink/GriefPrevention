@@ -100,13 +100,13 @@ public class EntityEventHandler implements Listener
 	//convenience reference for the singleton datastore
 	private DataStore dataStore;
 	GriefPrevention instance;
-	
+
 	public EntityEventHandler(DataStore dataStore, GriefPrevention plugin)
 	{
 		this.dataStore = dataStore;
 		instance = plugin;
 	}
-	
+
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityFormBlock(EntityBlockFormEvent event)
 	{
@@ -135,12 +135,12 @@ public class EntityEventHandler implements Listener
 		{
 			event.setCancelled(true);
 		}
-		
+
 		else if(!GriefPrevention.instance.config_silverfishBreakBlocks && event.getEntityType() == EntityType.SILVERFISH)
 		{
 			event.setCancelled(true);
 		}
-	    
+
 		else if(!GriefPrevention.instance.config_rabbitsEatCrops && event.getEntityType() == EntityType.RABBIT)
 		{
 		    event.setCancelled(true);
@@ -152,7 +152,7 @@ public class EntityEventHandler implements Listener
 			   event.setCancelled(true);
 			}
 		}
-	    
+
 		//don't allow crops to be trampled, except by a player with build permission
 		else if(event.getTo() == Material.DIRT && event.getBlock().getType() == Material.FARMLAND)
 		{
@@ -181,13 +181,13 @@ public class EntityEventHandler implements Listener
 				}
 			}
 		}
-		
+
 		//sand cannon fix - when the falling block doesn't fall straight down, take additional anti-grief steps
 		else if (event.getEntityType() == EntityType.FALLING_BLOCK)
 		{
 		    FallingBlock entity = (FallingBlock)event.getEntity();
 		    Block block = event.getBlock();
-		    
+
 		    //if changing a block TO air, this is when the falling block formed.  note its original location
 		    if(event.getTo() == Material.AIR)
 		    {
@@ -200,10 +200,10 @@ public class EntityEventHandler implements Listener
 		         //if we're not sure where this entity came from (maybe another plugin didn't follow the standard?), allow the block to form
 				 //Or if entity fell through an end portal, allow it to form, as the event is erroneously fired twice in this scenario.
 		         if(values.size() < 1) return;
-		         
+
 		         Location originalLocation = (Location)(values.get(0).value());
 		         Location newLocation = block.getLocation();
-		         
+
 		         //if did not fall straight down
 		         if(originalLocation.getBlockX() != newLocation.getBlockX() || originalLocation.getBlockZ() != newLocation.getBlockZ())
 		         {
@@ -213,7 +213,7 @@ public class EntityEventHandler implements Listener
 		                 event.setCancelled(true);
 		                 return;
 		             }
-		             
+
 		             //in other worlds, if landing in land claim, only allow if source was also in the land claim
 		             Claim claim = this.dataStore.getClaimAt(newLocation, false, null);
 		             if(claim != null && !claim.contains(originalLocation, false, false))
@@ -251,14 +251,14 @@ public class EntityEventHandler implements Listener
 			return;
 		event.getEntity().remove();
 	}
-	
+
 	//don't allow zombies to break down doors
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onZombieBreakDoor(EntityBreakDoorEvent event)
-	{		
+	{
 		if(!GriefPrevention.instance.config_zombiesBreakDoors) event.setCancelled(true);
 	}
-	
+
 	//don't allow entities to trample crops
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityInteract(EntityInteractEvent event)
@@ -280,90 +280,71 @@ public class EntityEventHandler implements Listener
 			}
 		}
 	}
-	
+
 	//when an entity explodes...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityExplode(EntityExplodeEvent explodeEvent)
-	{		
+	{
 		this.handleExplosion(explodeEvent.getLocation(), explodeEvent.getEntity(), explodeEvent.blockList());
 	}
-	
+
 	//when a block explodes...
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onBlockExplode(BlockExplodeEvent explodeEvent)
-    {       
+    {
         this.handleExplosion(explodeEvent.getBlock().getLocation(), null, explodeEvent.blockList());
     }
-    
+
     @SuppressWarnings("deprecation")
     void handleExplosion(Location location, Entity entity, List<Block> blocks)
     {
         //only applies to claims-enabled worlds
         World world = location.getWorld();
-        
+
         if(!GriefPrevention.instance.claimsEnabledForWorld(world)) return;
-        
+
         //FEATURE: explosions don't destroy surface blocks by default
         boolean isCreeper = (entity != null && entity.getType() == EntityType.CREEPER);
-        
+
         boolean applySurfaceRules = world.getEnvironment() == Environment.NORMAL && ((isCreeper && GriefPrevention.instance.config_blockSurfaceCreeperExplosions) || (!isCreeper && GriefPrevention.instance.config_blockSurfaceOtherExplosions));
-        
+
         //special rule for creative worlds: explosions don't destroy anything
         if(GriefPrevention.instance.creativeRulesApply(location))
         {
             for(int i = 0; i < blocks.size(); i++)
             {
                 Block block = blocks.get(i);
-                
+
                 blocks.remove(i--);
             }
-            
+
             return;
         }
-        
+
         //make a list of blocks which were allowed to explode
         List<Block> explodedBlocks = new ArrayList<Block>();
         Claim cachedClaim = null;
         for(int i = 0; i < blocks.size(); i++)
         {
             Block block = blocks.get(i);
-            
+
             //always ignore air blocks
             if(block.getType() == Material.AIR) continue;
-            
+
             //is it in a land claim?
             Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, cachedClaim);
             if(claim != null)
             {
                 cachedClaim = claim;
             }
-                    
+
             //if yes, apply claim exemptions if they should apply
             if(claim != null && (claim.areExplosivesAllowed || !GriefPrevention.instance.config_blockClaimExplosions))
             {
                 explodedBlocks.add(block);
                 continue;
             }
-            
-            //if claim is under siege, allow soft blocks to be destroyed
-            if(claim != null && claim.siegeData != null)
-            {
-                Material material = block.getType();
-                boolean breakable = false;
-                for(int j = 0; j < GriefPrevention.instance.config_siege_blocks.size(); j++)
-                {
-                    Material breakableMaterial = GriefPrevention.instance.config_siege_blocks.get(j);
-                    if(breakableMaterial == material)
-                    {
-                        breakable = true;
-                        explodedBlocks.add(block);
-                        break;
-                    }
-                }
 
-                if(breakable) continue;
-            }
-            
             //if no, then also consider surface rules
             if(claim == null)
             {
@@ -373,12 +354,12 @@ public class EntityEventHandler implements Listener
                 }
             }
         }
-        
+
         //clear original damage list and replace with allowed damage list
         blocks.clear();
         blocks.addAll(explodedBlocks);
     }
-	
+
 	//when an item spawns...
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onItemSpawn(ItemSpawnEvent event)
@@ -388,7 +369,7 @@ public class EntityEventHandler implements Listener
 		{
 			event.setCancelled(true);
 		}
-		
+
 		//if item is on watch list, apply protection
 		ArrayList<PendingItemProtection> watchList = GriefPrevention.instance.pendingItemWatchList;
 		Item newItem = event.getEntity();
@@ -409,8 +390,8 @@ public class EntityEventHandler implements Listener
 		    {
 		        continue;
 		    }
-		    
-		    //skip if new item location isn't near the expected spawn area 
+
+		    //skip if new item location isn't near the expected spawn area
 		    Location spawn = event.getLocation();
 		    Location expected = pendingProtection.location;
 		    if(!spawn.getWorld().equals(expected.getWorld()) ||
@@ -423,16 +404,16 @@ public class EntityEventHandler implements Listener
 		    {
 		        continue;
 		    }
-		    
+
 		    //otherwise, mark item with protection information
 		    newItem.setMetadata("GP_ITEMOWNER", new FixedMetadataValue(GriefPrevention.instance, pendingProtection.owner));
-		    
+
 		    //and remove pending protection data
 		    watchList.remove(i);
 		    break;
 		}
 	}
-	
+
 	//when an experience bottle explodes...
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onExpBottle(ExpBottleEvent event)
@@ -443,14 +424,14 @@ public class EntityEventHandler implements Listener
 			event.setExperience(0);
 		}
 	}
-	
+
 	//when a creature spawns...
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntitySpawn(CreatureSpawnEvent event)
 	{
 		//these rules apply only to creative worlds
 		if(!GriefPrevention.instance.creativeRulesApply(event.getLocation())) return;
-		
+
 		//chicken eggs and breeding could potentially make a mess in the wilderness, once griefers get involved
 		SpawnReason reason = event.getSpawnReason();
 		if(reason != SpawnReason.SPAWNER_EGG && reason != SpawnReason.BUILD_IRONGOLEM && reason != SpawnReason.BUILD_SNOWMAN && event.getEntityType() != EntityType.ARMOR_STAND)
@@ -467,45 +448,38 @@ public class EntityEventHandler implements Listener
 			return;
 		}
 	}
-	
+
 	//when an entity dies...
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityDeath(EntityDeathEvent event)
 	{
 		LivingEntity entity = event.getEntity();
-		
+
 		//don't do the rest in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(entity.getWorld())) return;
-		
+
 		//special rule for creative worlds: killed entities don't drop items or experience orbs
 		if(GriefPrevention.instance.creativeRulesApply(entity.getLocation()))
 		{
 			event.setDroppedExp(0);
-			event.getDrops().clear();			
+			event.getDrops().clear();
 		}
-		
+
 		//FEATURE: when a player is involved in a siege (attacker or defender role)
 		//his death will end the siege
-		
+
 		if(entity.getType() != EntityType.PLAYER) return;  //only tracking players
-		
+
 		Player player = (Player)entity;
 		PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-		
-		//if involved in a siege
-		if(playerData.siegeData != null)
-		{
-			//end it, with the dieing player being the loser
-			this.dataStore.endSiege(playerData.siegeData, null, player.getName(), event.getDrops());
-		}
-		
+
 		//FEATURE: lock dropped items to player who dropped them
-        
+
         World world = entity.getWorld();
-        
+
         //decide whether or not to apply this feature to this situation (depends on the world where it happens)
         boolean isPvPWorld = GriefPrevention.instance.pvpRulesApply(world);
-        if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) || 
+        if((isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInPvpWorlds) ||
            (!isPvPWorld && GriefPrevention.instance.config_lockDeathDropsInNonPvpWorlds))
         {
             Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
@@ -523,7 +497,7 @@ public class EntityEventHandler implements Listener
                     GriefPrevention.instance.pendingItemWatchList.add(
                            new PendingItemProtection(deathLocation, playerID, expirationTime, stack));
                 }
-                
+
                 //allow the player to receive a message about how to unlock any drops
                 playerData.dropsAreUnlocked = false;
                 playerData.receivedDropUnlockAdvertisement = false;
@@ -538,13 +512,13 @@ public class EntityEventHandler implements Listener
 		List<MetadataValue> data = item.getMetadata("GP_ITEMOWNER");
 		event.setCancelled(data != null && data.size() > 0);
 	}
-	
+
 	//when an entity picks up an item
 	@EventHandler(priority = EventPriority.LOWEST)
 	public void onEntityPickup(EntityChangeBlockEvent event)
 	{
 		//FEATURE: endermen don't steal claimed blocks
-		
+
 		//if its an enderman
 		if(event.getEntity().getType() == EntityType.ENDERMAN)
 		{
@@ -556,42 +530,42 @@ public class EntityEventHandler implements Listener
 			}
 		}
 	}
-	
+
 	//when a painting is broken
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onHangingBreak(HangingBreakEvent event)
     {
 	    //don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getEntity().getWorld())) return;
-	    
+
 	    //FEATURE: claimed paintings are protected from breakage
-		
+
 		//explosions don't destroy hangings
 	    if(event.getCause() == RemoveCause.EXPLOSION)
 	    {
 	        event.setCancelled(true);
 	        return;
 	    }
-	    
+
 	    //only allow players to break paintings, not anything else (like water and explosions)
 		if(!(event instanceof HangingBreakByEntityEvent))
     	{
         	event.setCancelled(true);
         	return;
     	}
-        
+
         HangingBreakByEntityEvent entityEvent = (HangingBreakByEntityEvent)event;
-        
+
         //who is removing it?
 		Entity remover = entityEvent.getRemover();
-        
+
 		//again, making sure the breaker is a player
 		if(remover.getType() != EntityType.PLAYER)
         {
         	event.setCancelled(true);
         	return;
         }
-		
+
 		//if the player doesn't have build permission, don't allow the breakage
 		Player playerRemover = (Player)entityEvent.getRemover();
         String noBuildReason = GriefPrevention.instance.allowBuild(playerRemover, event.getEntity().getLocation(), Material.AIR);
@@ -601,16 +575,16 @@ public class EntityEventHandler implements Listener
         	GriefPrevention.sendMessage(playerRemover, TextMode.Err, noBuildReason);
         }
     }
-	
+
 	//when a painting is placed...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onPaintingPlace(HangingPlaceEvent event)
 	{
 	    //don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getBlock().getWorld())) return;
-	    
+
 	    //FEATURE: similar to above, placing a painting requires build permission in the claim
-	
+
 		//if the player doesn't have permission, don't allow the placement
 		String noBuildReason = GriefPrevention.instance.allowBuild(event.getPlayer(), event.getEntity().getLocation(), Material.PAINTING);
         if(noBuildReason != null)
@@ -619,14 +593,14 @@ public class EntityEventHandler implements Listener
         	GriefPrevention.sendMessage(event.getPlayer(), TextMode.Err, noBuildReason);
 			return;
         }
-		
+
 		//otherwise, apply entity-count limitations for creative worlds
 		else if(GriefPrevention.instance.creativeRulesApply(event.getEntity().getLocation()))
 		{
 			PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
 			Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, playerData.lastClaim);
 			if(claim == null) return;
-			
+
 			String noEntitiesReason = claim.allowMoreEntities(false);
 			if(noEntitiesReason != null)
 			{
@@ -636,30 +610,30 @@ public class EntityEventHandler implements Listener
 			}
 		}
 	}
-	
+
 	private boolean isMonster(Entity entity)
     {
         if(entity instanceof Monster) return true;
-        
+
         EntityType type = entity.getType();
         if(type == EntityType.GHAST || type == EntityType.MAGMA_CUBE || type == EntityType.SHULKER || type == EntityType.POLAR_BEAR) return true;
-        
+
         if(type == EntityType.RABBIT)
         {
             Rabbit rabbit = (Rabbit)entity;
             if(rabbit.getRabbitType() == Rabbit.Type.THE_KILLER_BUNNY) return true;
         }
-        
+
         return false;
     }
-	
+
 	//when an entity is damaged
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityDamage (EntityDamageEvent event)
 	{
 		this.handleEntityDamageEvent(event, true);
 	}
-	
+
 	//when an entity is set on fire
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onEntityCombustByEntity (EntityCombustByEntityEvent event)
@@ -671,12 +645,12 @@ public class EntityEventHandler implements Listener
 	    this.handleEntityDamageEvent(eventWrapper, false);
 	    event.setCancelled(eventWrapper.isCancelled());
 	}
-	
+
 	private void handleEntityDamageEvent(EntityDamageEvent event, boolean sendErrorMessagesToPlayers)
 	{
 	    //monsters are never protected
         if(isMonster(event.getEntity())) return;
-        
+
         //horse protections can be disabled
         if(event.getEntity() instanceof Horse && !GriefPrevention.instance.config_claims_protectHorses) return;
         if(event.getEntity() instanceof Donkey && !GriefPrevention.instance.config_claims_protectDonkeys) return;
@@ -690,7 +664,7 @@ public class EntityEventHandler implements Listener
                 event.setCancelled(true);
             }
         }
-        
+
         //protect pets from environmental damage types which could be easily caused by griefers
         if(event.getEntity() instanceof Tameable && !GriefPrevention.instance.pvpRulesApply(event.getEntity().getWorld()))
         {
@@ -713,10 +687,10 @@ public class EntityEventHandler implements Listener
                 }
             }
         }
-        
+
         //the rest is only interested in entities damaging entities (ignoring environmental damage)
         if(!(event instanceof EntityDamageByEntityEvent)) return;
-        
+
         EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
 
         if(subEvent.getDamager() instanceof LightningStrike && subEvent.getDamager().hasMetadata("GP_TRIDENT"))
@@ -728,7 +702,7 @@ public class EntityEventHandler implements Listener
         Player attacker = null;
         Projectile arrow = null;
         Entity damageSource = subEvent.getDamager();
-        
+
         if(damageSource != null)
         {
             if(damageSource.getType() == EntityType.PLAYER)
@@ -743,20 +717,20 @@ public class EntityEventHandler implements Listener
                     attacker = (Player)arrow.getShooter();
                 }
             }
-            
+
             //protect players from lingering potion damage when protected from pvp
             if(damageSource.getType() == EntityType.AREA_EFFECT_CLOUD && event.getEntityType() == EntityType.PLAYER && GriefPrevention.instance.pvpRulesApply(event.getEntity().getWorld()))
             {
                 Player damaged = (Player)event.getEntity();
                 PlayerData damagedData = GriefPrevention.instance.dataStore.getPlayerData(damaged.getUniqueId());
-                
+
                 //case 1: recently spawned
                 if(GriefPrevention.instance.config_pvp_protectFreshSpawns && damagedData.pvpImmune)
                 {
                     event.setCancelled(true);
                     return;
                 }
-                
+
                 //case 2: in a pvp safe zone
                 else
                 {
@@ -778,19 +752,19 @@ public class EntityEventHandler implements Listener
                 }
             }
         }
-        
+
         //if the attacker is a player and defender is a player (pvp combat)
         if(attacker != null && event.getEntityType() == EntityType.PLAYER && GriefPrevention.instance.pvpRulesApply(attacker.getWorld()))
         {
             //FEATURE: prevent pvp in the first minute after spawn, and prevent pvp when one or both players have no inventory
-            
+
             Player defender = (Player)(event.getEntity());
-            
+
             if(attacker != defender)
             {
                 PlayerData defenderData = this.dataStore.getPlayerData(((Player)event.getEntity()).getUniqueId());
                 PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
-                
+
                 //otherwise if protecting spawning players
                 if(GriefPrevention.instance.config_pvp_protectFreshSpawns)
                 {
@@ -800,15 +774,15 @@ public class EntityEventHandler implements Listener
                         if(sendErrorMessagesToPlayers) GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.ThatPlayerPvPImmune);
                         return;
                     }
-                    
+
                     if(attackerData.pvpImmune)
                     {
                         event.setCancelled(true);
                         if(sendErrorMessagesToPlayers) GriefPrevention.sendMessage(attacker, TextMode.Err, Messages.CantFightWhileImmune);
                         return;
-                    }       
+                    }
                 }
-                
+
                 //FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
                 if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
                 {
@@ -829,7 +803,7 @@ public class EntityEventHandler implements Listener
                                 return;
                             }
                         }
-                        
+
                         Claim defenderClaim = this.dataStore.getClaimAt(defender.getLocation(), false, defenderData.lastClaim);
                         if( defenderClaim != null &&
                             !defenderData.inPvpCombat() &&
@@ -849,17 +823,17 @@ public class EntityEventHandler implements Listener
                 }
             }
         }
-        
+
         if(event instanceof EntityDamageByEntityEvent)
         {
             //don't track in worlds where claims are not enabled
             if(!GriefPrevention.instance.claimsEnabledForWorld(event.getEntity().getWorld())) return;
-            
+
             //protect players from being attacked by other players' pets when protected from pvp
             if(event.getEntityType() == EntityType.PLAYER)
             {
                 Player defender = (Player)event.getEntity();
-                
+
                 //if attacker is a pet
                 Entity damager = subEvent.getDamager();
                 if(damager != null && damager instanceof Tameable)
@@ -880,8 +854,8 @@ public class EntityEventHandler implements Listener
                                 defenderData.lastClaim = defenderClaim;
                                 PreventPvPEvent pvpEvent = new PreventPvPEvent(defenderClaim);
                                 Bukkit.getPluginManager().callEvent(pvpEvent);
-                                
-                                //if other plugins aren't making an exception to the rule 
+
+                                //if other plugins aren't making an exception to the rule
                                 if(!pvpEvent.isCancelled())
                                 {
                                     event.setCancelled(true);
@@ -893,7 +867,7 @@ public class EntityEventHandler implements Listener
                     }
                 }
             }
-            
+
             //if the damaged entity is a claimed item frame or armor stand, the damager needs to be a player with build trust in the claim
             if(subEvent.getEntityType() == EntityType.ITEM_FRAME
                || subEvent.getEntityType() == EntityType.ARMOR_STAND
@@ -902,10 +876,10 @@ public class EntityEventHandler implements Listener
             {
                 //allow for disabling villager protections in the config
                 if(subEvent.getEntityType() == EntityType.VILLAGER && !GriefPrevention.instance.config_claims_protectCreatures) return;
-                
+
                 //don't protect polar bears, they may be aggressive
                 if(subEvent.getEntityType() == EntityType.POLAR_BEAR) return;
-                
+
                 //decide whether it's claimed
                 Claim cachedClaim = null;
                 PlayerData playerData = null;
@@ -914,9 +888,9 @@ public class EntityEventHandler implements Listener
                     playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
                     cachedClaim = playerData.lastClaim;
                 }
-                
+
                 Claim claim = this.dataStore.getClaimAt(event.getEntity().getLocation(), false, cachedClaim);
-                
+
                 //if it's claimed
                 if(claim != null)
                 {
@@ -928,11 +902,11 @@ public class EntityEventHandler implements Listener
                         {
                             return;
                         }
-                        
+
                         event.setCancelled(true);
                         return;
                     }
-                    
+
                     //otherwise player must have container trust in the claim
                     String failureReason = claim.allowBuild(attacker, Material.AIR);
                     if(failureReason != null)
@@ -943,7 +917,7 @@ public class EntityEventHandler implements Listener
                     }
                 }
             }
-            
+
             //if the entity is an non-monster creature (remember monsters disqualified above), or a vehicle
             if (((subEvent.getEntity() instanceof Creature || subEvent.getEntity() instanceof WaterMob) && GriefPrevention.instance.config_claims_protectCreatures))
             {
@@ -957,18 +931,18 @@ public class EntityEventHandler implements Listener
                         if(attacker != null)
                         {
                             UUID ownerID = tameable.getOwner().getUniqueId();
-                           
+
                             //if the player interacting is the owner, always allow
                             if(attacker.getUniqueId().equals(ownerID)) return;
-                            
+
                             //allow for admin override
                             PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
                             if(attackerData.ignoreClaims) return;
-                           
+
                             //otherwise disallow in non-pvp worlds (and also pvp worlds if configured to do so)
                             if(!GriefPrevention.instance.pvpRulesApply(subEvent.getEntity().getLocation().getWorld()) || (GriefPrevention.instance.config_pvp_protectPets && subEvent.getEntityType() != EntityType.WOLF))
                             {
-                                OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID); 
+                                OfflinePlayer owner = GriefPrevention.instance.getServer().getOfflinePlayer(ownerID);
                                 String ownerName = owner.getName();
                                 if(ownerName == null) ownerName = "someone";
                                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, ownerName);
@@ -1012,10 +986,10 @@ public class EntityEventHandler implements Listener
                         }
                     }
                 }
-                
+
                 Claim cachedClaim = null;
                 PlayerData playerData = null;
-                
+
                 //if not a player or an explosive, allow
 				//RoboMWM: Or a lingering potion, or a witch
                 if(attacker == null
@@ -1031,15 +1005,15 @@ public class EntityEventHandler implements Listener
                 {
                     return;
                 }
-                
+
                 if(attacker != null)
                 {
                     playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
                     cachedClaim = playerData.lastClaim;
                 }
-                
+
                 Claim claim = this.dataStore.getClaimAt(event.getEntity().getLocation(), false, cachedClaim);
-                
+
                 //if it's claimed
                 if(claim != null)
                 {
@@ -1053,7 +1027,7 @@ public class EntityEventHandler implements Listener
                         {
                             return;
                         }
-                        
+
                         //all other cases
                         else
                         {
@@ -1062,9 +1036,9 @@ public class EntityEventHandler implements Listener
                             {
                                 damageSource.remove();
                             }
-                        }                       
+                        }
                     }
-                    
+
                     //otherwise the player damaging the entity must have permission, unless it's a dog in a pvp world
                     else if(!(event.getEntity().getWorld().getPVP() && event.getEntity().getType() == EntityType.WOLF))
                     {
@@ -1072,10 +1046,10 @@ public class EntityEventHandler implements Listener
                         if(noContainersReason != null)
                         {
                             event.setCancelled(true);
-                            
+
                             //kill the arrow to avoid infinite bounce between crowded together animals //RoboMWM: except for tridents
                             if(arrow != null && arrow.getType() != EntityType.TRIDENT) arrow.remove();
-                            
+
                             if(sendErrorMessagesToPlayers)
                             {
                                 String message = GriefPrevention.instance.dataStore.getMessage(Messages.NoDamageClaimedEntity, claim.getOwnerName());
@@ -1085,45 +1059,45 @@ public class EntityEventHandler implements Listener
                             }
                             event.setCancelled(true);
                         }
-                        
+
                         //cache claim for later
                         if(playerData != null)
                         {
                             playerData.lastClaim = claim;
-                        }                       
+                        }
                     }
                 }
             }
         }
 	}
-	
+
 	//when an entity is damaged
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onEntityDamageMonitor (EntityDamageEvent event)
     {
         //FEATURE: prevent players who very recently participated in pvp combat from hiding inventory to protect it from looting
         //FEATURE: prevent players who are in pvp combat from logging out to avoid being defeated
-        
+
         if(event.getEntity().getType() != EntityType.PLAYER) return;
-        
+
         Player defender = (Player)event.getEntity();
-        
+
         //only interested in entities damaging entities (ignoring environmental damage)
         if(!(event instanceof EntityDamageByEntityEvent)) return;
 
 		//Ignore "damage" from snowballs, eggs, etc. from triggering the PvP timer
 		if (event.getDamage() == 0) return;
-        
+
         EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
-        
+
         //if not in a pvp rules world, do nothing
         if(!GriefPrevention.instance.pvpRulesApply(defender.getWorld())) return;
-        
+
         //determine which player is attacking, if any
         Player attacker = null;
         Projectile arrow = null;
         Entity damageSource = subEvent.getDamager();
-        
+
         if(damageSource != null)
         {
             if(damageSource.getType() == EntityType.PLAYER)
@@ -1139,13 +1113,13 @@ public class EntityEventHandler implements Listener
                 }
             }
         }
-        
+
         //if attacker not a player, do nothing
         if(attacker == null) return;
-        
+
         PlayerData defenderData = this.dataStore.getPlayerData(defender.getUniqueId());
         PlayerData attackerData = this.dataStore.getPlayerData(attacker.getUniqueId());
-        
+
         if(attacker != defender)
         {
             long now = Calendar.getInstance().getTimeInMillis();
@@ -1155,20 +1129,20 @@ public class EntityEventHandler implements Listener
             attackerData.lastPvpPlayer = defender.getName();
         }
     }
-	
+
 	//when a vehicle is damaged
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
 	public void onVehicleDamage (VehicleDamageEvent event)
 	{
 		//all of this is anti theft code
-		if(!GriefPrevention.instance.config_claims_preventTheft) return;	
-		
+		if(!GriefPrevention.instance.config_claims_preventTheft) return;
+
 		//input validation
 		if(event.getVehicle() == null) return;
-		
+
 		//don't track in worlds where claims are not enabled
         if(!GriefPrevention.instance.claimsEnabledForWorld(event.getVehicle().getWorld())) return;
-		
+
 		//determine which player is attacking, if any
 		Player attacker = null;
 		Entity damageSource = event.getAttacker();
@@ -1192,26 +1166,26 @@ public class EntityEventHandler implements Listener
     			}
     		}
 		}
-		
+
 		//if not a player and not an explosion, always allow
         if(attacker == null && damageSourceType != EntityType.CREEPER && damageSourceType != EntityType.WITHER && damageSourceType != EntityType.PRIMED_TNT)
         {
             return;
         }
-		
+
 		//NOTE: vehicles can be pushed around.
 		//so unless precautions are taken by the owner, a resourceful thief might find ways to steal anyway
 		Claim cachedClaim = null;
 		PlayerData playerData = null;
-		
+
 		if(attacker != null)
 		{
 			playerData = this.dataStore.getPlayerData(attacker.getUniqueId());
 			cachedClaim = playerData.lastClaim;
 		}
-		
+
 		Claim claim = this.dataStore.getClaimAt(event.getVehicle().getLocation(), false, cachedClaim);
-		
+
 		//if it's claimed
 		if(claim != null)
 		{
@@ -1220,10 +1194,10 @@ public class EntityEventHandler implements Listener
 			{
 				event.setCancelled(true);
 			}
-			
+
 			//otherwise the player damaging the entity must have permission
 			else
-			{		
+			{
 				String noContainersReason = claim.allowContainers(attacker);
 				if(noContainersReason != null)
 				{
@@ -1234,29 +1208,29 @@ public class EntityEventHandler implements Listener
                     GriefPrevention.sendMessage(attacker, TextMode.Err, message);
                     event.setCancelled(true);
 				}
-				
+
 				//cache claim for later
 				if(playerData != null)
 				{
 					playerData.lastClaim = claim;
-				}						
+				}
 			}
 		}
 	}
-	
+
 	//when a splash potion effects one or more entities...
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPotionSplash (PotionSplashEvent event)
 	{
 	    ThrownPotion potion = event.getPotion();
-	    
+
 	    //ignore potions not thrown by players
 	    ProjectileSource projectileSource = potion.getShooter();
         if(projectileSource == null) return;
         Player thrower = null;
 		if ((projectileSource instanceof Player))
 				thrower = (Player)projectileSource;
-        
+
 	    Collection<PotionEffect> effects = potion.getEffects();
 	    for(PotionEffect effect : effects)
 	    {
@@ -1290,15 +1264,15 @@ public class EntityEventHandler implements Listener
 
 	        //otherwise, no restrictions for positive effects
             if(positiveEffects.contains(effectType)) continue;
-	        
+
 	        for(LivingEntity effected : event.getAffectedEntities())
 	        {
 	            //always impact the thrower
 	            if(effected == thrower) continue;
-	            
+
 	            //always impact non players
 	            if(effected.getType() != EntityType.PLAYER) continue;
-	            
+
 	            //otherwise if in no-pvp zone, stop effect
 	            //FEATURE: prevent players from engaging in PvP combat inside land claims (when it's disabled)
 	            else if(GriefPrevention.instance.config_pvp_noCombatInPlayerLandClaims || GriefPrevention.instance.config_pvp_noCombatInAdminLandClaims)
@@ -1319,7 +1293,7 @@ public class EntityEventHandler implements Listener
     	                    continue;
                         }
 	                }
-	                
+
 	                Claim defenderClaim = this.dataStore.getClaimAt(effectedPlayer.getLocation(), false, defenderData.lastClaim);
 	                if(defenderClaim != null && GriefPrevention.instance.claimIsPvPSafeZone(defenderClaim))
 	                {
@@ -1337,7 +1311,7 @@ public class EntityEventHandler implements Listener
 	        }
 	    }
 	}
-	
+
 	public static final HashSet<PotionEffectType> positiveEffects = new HashSet<PotionEffectType>(Arrays.asList
 	(
 	    PotionEffectType.ABSORPTION,
