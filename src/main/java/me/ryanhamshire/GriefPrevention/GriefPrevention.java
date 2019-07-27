@@ -180,8 +180,6 @@ public class GriefPrevention extends JavaPlugin
 
 	public int config_ipLimit;                                      //how many players can share an IP address
 
-	public boolean config_trollFilterEnabled;                       //whether to auto-mute new players who use banned words right after joining
-
 	public HashMap<String, Integer> config_seaLevelOverride;		//override for sea level, because bukkit doesn't report the right value for all situations
 
 	public boolean config_limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
@@ -587,7 +585,6 @@ public class GriefPrevention extends JavaPlugin
         whisperCommandsToMonitor = config.getString("GriefPrevention.Spam.WhisperSlashCommands", whisperCommandsToMonitor);
 
         this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
-        this.config_trollFilterEnabled = config.getBoolean("GriefPrevention.Mute New Players Using Banned Words", true);
         this.config_ipLimit = config.getInt("GriefPrevention.MaxPlayersPerIpAddress", 3);
 
         this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
@@ -744,7 +741,6 @@ public class GriefPrevention extends JavaPlugin
         outConfig.set("GriefPrevention.AdminsGetSignNotifications", this.config_signNotifications);
 
         outConfig.set("GriefPrevention.SmartBan", this.config_smartBan);
-        outConfig.set("GriefPrevention.Mute New Players Using Banned Words", this.config_trollFilterEnabled);
         outConfig.set("GriefPrevention.MaxPlayersPerIpAddress", this.config_ipLimit);
 
         outConfig.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);

@@ -47,6 +47,9 @@ public class Claim
 	//use getOwnerName() to get a friendly name (will be "an administrator" for admin claims)
 	public UUID ownerID;
 
+	// The name of the claim.
+	private String name;
+
 	//list of players who (beyond the claim owner) have permission to grant permissions in this claim
 	public ArrayList<String> managers = new ArrayList<String>();
 
@@ -187,7 +190,7 @@ public class Claim
 	}
 
 	//main constructor.  note that only creating a claim instance does nothing - a claim must be added to the data store to be effective
-	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs, List<String> accessorIDs, List<String> managerIDs, boolean inheritNothing, Long id)
+	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs, List<String> accessorIDs, List<String> managerIDs, boolean inheritNothing, Long id, String name)
 	{
 		//modification date
 		this.modifiedDate = Calendar.getInstance().getTime();
@@ -236,11 +239,17 @@ public class Claim
 		}
 
 		this.inheritNothing = inheritNothing;
+
+		this.name = name;
 	}
 
-	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs, List<String> accessorIDs, List<String> managerIDs, Long id)
+	Claim(Location lesserBoundaryCorner, Location greaterBoundaryCorner, UUID ownerID, List<String> builderIDs, List<String> containerIDs, List<String> accessorIDs, List<String> managerIDs, Long id, String name)
 	{
-		this(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderIDs, containerIDs, accessorIDs, managerIDs, false, id);
+		this(lesserBoundaryCorner, greaterBoundaryCorner, ownerID, builderIDs, containerIDs, accessorIDs, managerIDs, false, id, name);
+	}
+
+	public String getName() {
+		return this.name;
 	}
 
 	//measurements.  all measurements are in blocks
@@ -278,7 +287,7 @@ public class Claim
 		Claim claim = new Claim
 			(new Location(this.lesserBoundaryCorner.getWorld(), this.lesserBoundaryCorner.getBlockX() - howNear, this.lesserBoundaryCorner.getBlockY(), this.lesserBoundaryCorner.getBlockZ() - howNear),
 			 new Location(this.greaterBoundaryCorner.getWorld(), this.greaterBoundaryCorner.getBlockX() + howNear, this.greaterBoundaryCorner.getBlockY(), this.greaterBoundaryCorner.getBlockZ() + howNear),
-			 null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
+			 null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null, "");
 
 		return claim.contains(location, false, true);
 	}

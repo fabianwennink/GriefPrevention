@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 package me.ryanhamshire.GriefPrevention;
 
 import java.util.ArrayList;
@@ -32,17 +32,17 @@ import org.bukkit.entity.Player;
 
 //this main thread task takes the output from the RestoreNatureProcessingTask\
 //and updates the world accordingly
-class RestoreNatureExecutionTask implements Runnable 
+class RestoreNatureExecutionTask implements Runnable
 {
 	//results from processing thread
 	//will be applied to the world
 	private BlockSnapshot[][][] snapshots;
-	
+
 	//boundaries for changes
 	private int miny;
 	private Location lesserCorner;
 	private Location greaterCorner;
-	
+
 	//player who should be notified about the result (will see a visualization when the restoration is complete)
 	private Player player;
 
@@ -54,7 +54,7 @@ class RestoreNatureExecutionTask implements Runnable
 		this.greaterCorner = greaterCorner;
 		this.player = player;
 	}
-	
+
 	@SuppressWarnings("deprecation")
         @Override
 	public void run()
@@ -79,7 +79,7 @@ class RestoreNatureExecutionTask implements Runnable
 							cachedClaim = claim;
 							break;
 						}
-						
+
 						try
 						{
 							currentBlock.setType(blockUpdate.typeId, false);
@@ -93,7 +93,7 @@ class RestoreNatureExecutionTask implements Runnable
 				}
 			}
 		}
-		
+
 		//clean up any entities in the chunk, ensure no players are suffocated
 		Chunk chunk = this.lesserCorner.getChunk();
 		Entity [] entities = chunk.getEntities();
@@ -107,9 +107,9 @@ class RestoreNatureExecutionTask implements Runnable
 				{
 					//everything else is removed
 					entity.remove();
-				}				
+				}
 			}
-			
+
 			//for players, always ensure there's air where the player is standing
 			else
 			{
@@ -118,13 +118,13 @@ class RestoreNatureExecutionTask implements Runnable
 				feetBlock.getRelative(BlockFace.UP).setType(Material.AIR);
 			}
 		}
-		
+
 		//show visualization to player who started the restoration
 		if(player != null)
 		{
-			Claim claim = new Claim(lesserCorner, greaterCorner, null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
+			Claim claim = new Claim(lesserCorner, greaterCorner, null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null, null);
 			Visualization visualization = Visualization.FromClaim(claim, player.getLocation().getBlockY(), VisualizationType.RestoreNature, player.getLocation());
 			Visualization.Apply(player, visualization);
 		}
-	}	
+	}
 }

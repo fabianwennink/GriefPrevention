@@ -2095,7 +2095,7 @@ class PlayerEventHandler implements Listener
 				instance.sendMessage(player, TextMode.Instr, Messages.ClaimStart);
 
 				//show him where he's working
-                Claim newClaim = new Claim(clickedBlock.getLocation(), clickedBlock.getLocation(), null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null);
+                Claim newClaim = new Claim(clickedBlock.getLocation(), clickedBlock.getLocation(), null, new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), new ArrayList<String>(), null, null);
 				Visualization visualization = Visualization.FromClaim(newClaim, clickedBlock.getY(), VisualizationType.RestoreNature, player.getLocation());
 
                 // alert plugins of a visualization
